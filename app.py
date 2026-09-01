@@ -398,7 +398,11 @@ with tab1:
     if image:
         c1, c2, c3 = st.columns([1,4,1])
         with c2:
-            st.image(image, caption="Your Leaf Photo", use_column_width=True)
+            st.image(
+    image,
+    caption="✅ Your leaf photo is ready for analysis",
+    use_container_width=True
+)
 
         st.markdown("<br>", unsafe_allow_html=True)
         btn = st.button(
