@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 
 st.set_page_config(
-    page_title="AgroVision AI — Plant Disease Detection",
+    page_title="Farmer Support Decision System for Plant Disease Detection and Treatment",
     page_icon="🌿",
     layout="centered"
 )
@@ -110,6 +110,17 @@ diseases_db = {
     "strawberry leaf scorch":{"name":"Strawberry Leaf Scorch","crop":"Strawberry","emoji":"🟠","severity":"Moderate","sev_emoji":"🟡","action":"Act within 5 days","cause":"Fungus: Diplocarpon earlianum","symptoms":"Small dark purple spots on leaves that enlarge and merge, giving a scorched or burned appearance, reduced plant vigor.","treatment":["Apply Captan or copper-based fungicide","Remove and destroy infected leaves","Spray every 10-14 days during wet season","Improve air circulation around plants"],"prevention":["Plant resistant strawberry varieties","Space plants properly for airflow","Avoid overhead irrigation","Remove old infected leaves after harvest"],"fertilizer":["Apply balanced NPK fertilizer","Use Potassium to boost resistance","Apply Calcium foliar spray","Avoid excessive Nitrogen"]},
 }
 
+# ── Crop helpers (used by the crop check) ──────
+def class_crop(name):
+    """Crop that a model class belongs to, e.g. 'Corn Common Rust' -> 'Corn/Maize'."""
+    first = name.split()[0]
+    return "Corn/Maize" if first == "Corn" else first
+
+# crops the photo model was trained on, and crops that only work through Search/Browse
+photo_crops = sorted({class_crop(c) for c in ai_classes})
+search_only_crops = sorted({i["crop"] for i in diseases_db.values()} - set(photo_crops))
+NO_CROP = "— Select your crop —"
+
 # ── CSS ────────────────────────────────────────
 st.markdown("""
 <style>
@@ -143,7 +154,7 @@ i[class*="material-icons"] {
     font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
     margin-bottom: 16px;
 }
-.hero h1 { color: white; font-size: 2rem; font-weight: 700; margin: 0 0 10px 0; line-height: 1.2; }
+.hero h1 { color: white; font-size: 1.5rem; font-weight: 700; margin: 0 0 12px 0; line-height: 1.35; letter-spacing: 0.5px; }
 .hero p { color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 0; }
 
 .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
@@ -242,13 +253,18 @@ i[class*="material-icons"] {
 """, unsafe_allow_html=True)
 
 # ── Helper Function ────────────────────────────
+def list_box(title, items, cls):
+    # FIXED: build the whole card in ONE block so the bullet items stay inside the card
+    rows = "".join(f'<div class="li"><span class="{cls}">▸</span><span>{t}</span></div>' for t in items)
+    st.markdown(f'<div class="info-box"><div class="info-title">{title}</div>{rows}</div>', unsafe_allow_html=True)
+
 def show_info(info, confidence=None):
     if confidence is not None:
         st.markdown(f"""
         <div class="conf-box">
-            <div class="conf-lbl">AI Confidence Score</div>
+            <div class="conf-lbl">Confidence Score</div>
             <div class="conf-val">{confidence:.1f}%</div>
-            <div class="conf-sub">Based on MobileNetV2 deep learning analysis</div>
+            <div class="conf-sub">Based on MobileNetV2 image analysis</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -286,34 +302,25 @@ def show_info(info, confidence=None):
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="info-box"><div class="info-title">💊 Recommended Treatment</div>', unsafe_allow_html=True)
-    for t in info["treatment"]:
-        st.markdown(f'<div class="li"><span class="dg">▸</span><span>{t}</span></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    list_box("💊 Recommended Treatment", info["treatment"], "dg")
 
-    st.markdown('<div class="info-box"><div class="info-title">🛡️ Prevention Tips</div>', unsafe_allow_html=True)
-    for p in info["prevention"]:
-        st.markdown(f'<div class="li"><span class="db">▸</span><span>{p}</span></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    list_box("🛡️ Prevention Tips", info["prevention"], "db")
 
-    st.markdown('<div class="info-box"><div class="info-title">🌱 Fertilizer Recommendation</div>', unsafe_allow_html=True)
-    for f in info["fertilizer"]:
-        st.markdown(f'<div class="li"><span class="dp">▸</span><span>{f}</span></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    list_box("🌱 Fertilizer Recommendation", info["fertilizer"], "dp")
 
 # ── Hero ───────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <div class="hero-tag">🌿 AI-Powered Agriculture — FUTB 2024/2025</div>
-    <h1>Plant Disease Detection<br>& Treatment System</h1>
-    <p>Upload or take a leaf photo · Get instant AI diagnosis · Follow treatment advice</p>
+    <div class="hero-tag">🌿 Agriculture Support — FUTB 2024/2025</div>
+    <h1>FARMER SUPPORT DECISION SYSTEM<br>FOR PLANT DISEASE DETECTION<br>AND TREATMENT</h1>
+    <p>Upload or take a leaf photo · Get an instant diagnosis · Follow treatment advice</p>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="stats">
-    <div class="stat"><div class="stat-n">14+</div><div class="stat-l">Crops</div></div>
-    <div class="stat"><div class="stat-n">47+</div><div class="stat-l">Diseases</div></div>
+    <div class="stat"><div class="stat-n">18</div><div class="stat-l">Crops</div></div>
+    <div class="stat"><div class="stat-n">39</div><div class="stat-l">Diseases</div></div>
     <div class="stat"><div class="stat-n">95%</div><div class="stat-l">Accuracy</div></div>
     <div class="stat"><div class="stat-n">Free</div><div class="stat-l">Always</div></div>
 </div>
@@ -336,20 +343,24 @@ with tab1:
         <div class="how-title">📖 How to Use</div>
         <div class="step">
             <div class="step-n">1</div>
-            <div class="step-t">Upload a photo from gallery OR take a photo directly with your camera</div>
+            <div class="step-t">Select the crop your leaf comes from</div>
         </div>
         <div class="step">
             <div class="step-n">2</div>
-            <div class="step-t">Click Analyze — AI checks if it is a leaf then detects the disease</div>
+            <div class="step-t">Upload a photo from gallery OR take a photo directly with your camera</div>
         </div>
         <div class="step">
             <div class="step-n">3</div>
+            <div class="step-t">Click Analyze — the system checks if it is a leaf, then detects the disease</div>
+        </div>
+        <div class="step">
+            <div class="step-n">4</div>
             <div class="step-t">Read the diagnosis, severity level, treatment and fertilizer advice</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("#### ✅ AI Supported Crops")
+    st.markdown("#### ✅ Crops Supported by Photo Detection")
     st.markdown("""
     <div style="margin:8px 0 4px 0;">
         <span class="chip">🍎 Apple</span>
@@ -372,8 +383,16 @@ with tab1:
     </p>
     """, unsafe_allow_html=True)
 
-    # ── Camera or Upload ───────────────────────
-    st.markdown("#### 📷 Choose How to Add Your Leaf Photo")
+    # ── Step 1: crop selection ─────────────────
+    st.markdown("#### 🌱 Step 1: Select Your Crop")
+    crop_choice = st.selectbox(
+        "Which crop is this leaf from?",
+        [NO_CROP] + photo_crops + search_only_crops + ["Not sure"],
+        label_visibility="collapsed"
+    )
+
+    # ── Step 2: camera or upload ───────────────
+    st.markdown("#### 📷 Step 2: Choose How to Add Your Leaf Photo")
     method = st.radio(
         "Input method:",
         ["📁 Upload from Gallery", "📷 Take Photo with Camera"],
@@ -399,10 +418,10 @@ with tab1:
         c1, c2, c3 = st.columns([1,4,1])
         with c2:
             st.image(
-    image,
-    caption="✅ Your leaf photo is ready for analysis",
-    use_container_width=True
-)
+                image,
+                caption="✅ Your leaf photo is ready for analysis",
+                use_container_width=True
+            )
 
         st.markdown("<br>", unsafe_allow_html=True)
         btn = st.button(
@@ -412,8 +431,26 @@ with tab1:
         )
 
         if btn:
-            if not model_loaded:
-                st.error("❌ AI Model not loaded! Make sure your .tflite files are in the models/ folder.")
+            if crop_choice == NO_CROP:
+                st.warning("⚠️ Please select your crop in Step 1, then click Analyze.")
+            elif crop_choice in search_only_crops:
+                # The photo model was not trained on these crops, so do not guess from the photo.
+                st.markdown(f"""
+                <div class="card card-warning">
+                    <div class="tag tag-orange">ℹ️ Photo Detection Not Available</div>
+                    <div class="card-title">{crop_choice}: Use the Disease Guide</div>
+                    <div class="card-sub">
+                    The photo model was not trained on {crop_choice} leaves, so it cannot
+                    diagnose them from a photo. Compare your leaf with the diseases listed
+                    below and check the symptoms and treatment of each one.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                for info in [m for m in diseases_db.values() if m["crop"] == crop_choice]:
+                    with st.expander(f"{info['emoji']} {info['name']} — {info['severity']}"):
+                        show_info(info)
+            elif not model_loaded:
+                st.error("❌ Model not loaded! Make sure your .tflite files are in the models/ folder.")
             else:
                 img = image.resize((224,224))
                 arr = np.array(img, dtype=np.float32)/255.0
@@ -466,12 +503,15 @@ with tab1:
                         st.stop()
 
                 # Stage 2 — Disease Detection
-                with st.spinner("🤖 Stage 2 — Analyzing disease..."):
+                with st.spinner("🔬 Stage 2 — Analyzing disease..."):
                     interpreter.set_tensor(input_details[0]['index'], inp)
                     interpreter.invoke()
                     pred = interpreter.get_tensor(output_details[0]['index'])
                     result = ai_classes[np.argmax(pred)]
                     conf = np.max(pred)*100
+
+                # Crop check: the predicted crop must match the crop the user selected
+                crop_mismatch = (crop_choice != "Not sure" and class_crop(result) != crop_choice)
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -483,36 +523,48 @@ with tab1:
                     </div>
                     """, unsafe_allow_html=True)
 
-                if conf < 60:
+                if crop_choice == "Not sure" and conf >= 60 and not crop_mismatch:
+                    st.warning("⚠️ You did not confirm the crop, so this result may be wrong for crops the model was not trained on (Rice, Cassava, Groundnut, Onion). Please check that the detected crop matches your plant.")
+
+                if conf < 60 or crop_mismatch:
+                    # A low score, or a predicted crop that differs from the selected crop,
+                    # means the leaf is probably not in the training data.
+                    if crop_mismatch:
+                        low_msg = (f"This leaf did not match the {crop_choice} diseases "
+                                   f"the model knows (score: {conf:.1f}%). Check that you "
+                                   f"selected the correct crop, or use the Search or Browse "
+                                   f"tab to find its diseases and treatments.")
+                    else:
+                        low_msg = (f"The system could not identify this leaf with enough "
+                                   f"confidence (score: {conf:.1f}%, required: 60%). This crop "
+                                   f"or disease may not be in the model's training data. "
+                                   f"If your crop is Rice, Cassava, Groundnut or Onion, use "
+                                   f"the Search or Browse tab to get its diseases and treatments.")
                     st.markdown(f"""
                     <div class="card card-warning">
-                        <div class="tag tag-orange">⚠️ Low Confidence</div>
-                        <div class="card-title">Photo Not Clear Enough</div>
-                        <div class="card-sub">
-                        Confidence score is {conf:.1f}% which is below the
-                        required 60% threshold. Please try again with a
-                        clearer, well-lit photo of the leaf.
-                        </div>
+                        <div class="tag tag-orange">⚠️ Leaf Not Recognized</div>
+                        <div class="card-title">Leaf Not Recognized</div>
+                        <div class="card-sub">{low_msg}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     st.markdown("""
                     <div class="how-box">
-                        <div class="how-title">💡 How to Take a Better Photo</div>
+                        <div class="how-title">💡 What You Can Do</div>
                         <div class="step">
-                            <div class="step-n">✓</div>
-                            <div class="step-t"><b>Natural light</b> — Take photo outside or near window</div>
+                            <div class="step-n">1</div>
+                            <div class="step-t"><b>Check the crop</b> — Photo detection only works for the supported crops listed above</div>
                         </div>
                         <div class="step">
-                            <div class="step-n">✓</div>
-                            <div class="step-t"><b>Get closer</b> — Leaf should fill most of the frame</div>
+                            <div class="step-n">2</div>
+                            <div class="step-t"><b>Use Search or Browse</b> — For Rice, Cassava, Groundnut, Onion or any crop not listed, open the Search or Browse Crops tab</div>
                         </div>
                         <div class="step">
-                            <div class="step-n">✓</div>
-                            <div class="step-t"><b>Hold steady</b> — Avoid blurry photos</div>
+                            <div class="step-n">3</div>
+                            <div class="step-t"><b>Search by symptom</b> — In the Search tab, type what you see on the leaf, for example "yellow spots"</div>
                         </div>
                         <div class="step">
-                            <div class="step-n">✓</div>
-                            <div class="step-t"><b>Clean lens</b> — Wipe camera lens before shooting</div>
+                            <div class="step-n">4</div>
+                            <div class="step-t"><b>Try another photo</b> — If your crop is supported, take a close-up of one leaf in natural light</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -550,7 +602,7 @@ with tab1:
                     else:
                         st.markdown(f"""
                         <div class="conf-box">
-                            <div class="conf-lbl">AI Confidence Score</div>
+                            <div class="conf-lbl">Confidence Score</div>
                             <div class="conf-val">{conf:.1f}%</div>
                         </div>
                         """, unsafe_allow_html=True)
@@ -677,11 +729,12 @@ with tab3:
                     show_info(info)
 
 # ── Footer ─────────────────────────────────────
+# CHANGED: removed the stray blank lines and the leftover word "System"
 st.markdown("""
 <div class="footer">
     <div class="footer-logo">🌿 AgroVision AI</div>
     <div class="footer-text">
-        AI-Powered Plant Disease Detection System<br>
+        FARMER SUPPORT DECISION SYSTEM FOR PLANT DISEASE DETECTION AND TREATMENT<br>
         Developed by <b style="color:#343a40;">Yusuf Gambo</b>
         &nbsp;·&nbsp; Matric No: SIT/CSC/23/0005<br>
         B.Sc Computer Science &nbsp;·&nbsp;
