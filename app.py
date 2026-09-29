@@ -8,19 +8,23 @@ st.set_page_config(
     layout="centered"
 )
 
-# ── Load Disease Model ─────────────────────────
+# ── Load Leaf Validator ─────────────────────────
 model_loaded = False
+# ── Load Disease Model ─────────────────────────
+from pathlib import Path
+from ai_edge_litert.interpreter import Interpreter
+
+model_loaded = False
+model_path = Path(__file__).parent / "models" / "plant_disease_model_38.tflite"
+
 try:
-    from ai_edge_litert.interpreter import Interpreter
-    interpreter = Interpreter(
-        model_path="models/plant_disease_model_38.tflite"
-    )
+    interpreter = Interpreter(model_path=str(model_path))
     interpreter.allocate_tensors()
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
     model_loaded = True
 except Exception as e:
-    pass
+    st.error(f"Could not load disease model at {model_path}: {e}")
 
 # ── Load Leaf Validator ────────────────────────
 validator_loaded = False
