@@ -732,7 +732,7 @@ with tab3:
 # CHANGED: removed the stray blank lines and the leftover word "System"
 st.markdown("""
 <div class="footer">
-    <div class="footer-logo">🌿 AgroVision AI</div>
+    <div class="footer-logo">🌿 farmersupport </div>
     <div class="footer-text">FARMER SUPPORT DECISION SYSTEM FOR PLANT DISEASE DETECTION AND TREATMEN
         T<br>
         Developed by <b style="color:#343a40;">Yusuf Gambo</b>
@@ -741,9 +741,6 @@ st.markdown("""
         Federal University of Technology Babura &nbsp;·&nbsp; 2024/2025<br>
         Supervised by <b style="color:#343a40;">Dr. Khalid Haruna</b>
         <br><br>
-        <a class="footer-link"
-        href="https://futb-plant-disease.streamlit.app">
-        🌐 futb-plant-disease.streamlit.app</a>
     </div>
 </div>
 """, unsafe_allow_html=True)
