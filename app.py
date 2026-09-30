@@ -8,23 +8,19 @@ st.set_page_config(
     layout="centered"
 )
 
-# ── Load Leaf Validator ─────────────────────────
-model_loaded = False
 # ── Load Disease Model ─────────────────────────
-from pathlib import Path
-from ai_edge_litert.interpreter import Interpreter
-
 model_loaded = False
-model_path = Path(__file__).parent / "models" / "plant_disease_model_38.tflite"
-
 try:
-    interpreter = Interpreter(model_path=str(model_path))
+    from ai_edge_litert.interpreter import Interpreter
+    interpreter = Interpreter(
+        model_path="models/plant_disease_model_38.tflite"
+    )
     interpreter.allocate_tensors()
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
     model_loaded = True
 except Exception as e:
-    st.error(f"Could not load disease model at {model_path}: {e}")
+    pass
 
 # ── Load Leaf Validator ────────────────────────
 validator_loaded = False
@@ -737,8 +733,8 @@ with tab3:
 st.markdown("""
 <div class="footer">
     <div class="footer-logo">🌿 AgroVision AI</div>
-    <div class="footer-text">
-        FARMER SUPPORT DECISION SYSTEM FOR PLANT DISEASE DETECTION AND TREATMENT<br>
+    <div class="footer-text">FARMER SUPPORT DECISION SYSTEM FOR PLANT DISEASE DETECTION AND TREATMEN
+        T<br>
         Developed by <b style="color:#343a40;">Yusuf Gambo</b>
         &nbsp;·&nbsp; Matric No: SIT/CSC/23/0005<br>
         B.Sc Computer Science &nbsp;·&nbsp;
