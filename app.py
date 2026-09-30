@@ -733,8 +733,8 @@ with tab3:
 st.markdown("""
 <div class="footer">
     <div class="footer-logo">🌿 AgroVision AI</div>
-    <div class="footer-text">
-        FARMER SUPPORT DECISION SYSTEM FOR PLANT DISEASE DETECTION AND TREATMENT<br>
+    <div class="footer-text">FARMER SUPPORT DECISION SYSTEM FOR PLANT DISEASE DETECTION AND TREATMEN
+        T<br>
         Developed by <b style="color:#343a40;">Yusuf Gambo</b>
         &nbsp;·&nbsp; Matric No: SIT/CSC/23/0005<br>
         B.Sc Computer Science &nbsp;·&nbsp;
